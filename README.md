@@ -2,7 +2,7 @@
 
 A lightweight system tray indicator that displays your Claude API rate-limit usage in real time — directly in your Linux taskbar.
 
-![Screenshot](screenshot.png?v=2)
+![Screenshot](screenshot.png)
 
 Inspired by [Claude-Code-Usage-Monitor](https://github.com/CodeZeno/Claude-Code-Usage-Monitor) for Windows by [@CodeZeno](https://github.com/CodeZeno). Huge respect for the original idea — this project brings the same concept to Linux.
 
