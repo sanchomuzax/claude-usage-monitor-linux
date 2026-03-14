@@ -30,7 +30,16 @@ def _acquire_lock():
         _LOCK_FH.flush()
         return True
     except OSError:
-        return False
+        # Check if the holding process is still alive
+        try:
+            with open(_LOCK_PATH) as f:
+                old_pid = int(f.read().strip())
+            os.kill(old_pid, 0)  # raises OSError if process is dead
+            return False  # process is alive, real duplicate
+        except (OSError, ValueError):
+            # Stale lock — previous process died without cleanup
+            os.unlink(_LOCK_PATH)
+            return _acquire_lock()
 
 
 if not _acquire_lock():

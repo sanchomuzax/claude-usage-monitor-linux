@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Claude Usage Monitor
+Comment=System tray monitor for Claude API rate limits
+Exec=python3 /home/sancho/claude-usage-monitor-linux/main.py
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Terminal=false
+Categories=Utility;Monitor;
