@@ -6,7 +6,6 @@ renders custom icons).
 """
 
 import cairo
-import fcntl
 import math
 import os
 from pathlib import Path
@@ -55,16 +54,6 @@ _AUTOSTART_DIR = Path.home() / ".config" / "autostart"
 _AUTOSTART_FILE = _AUTOSTART_DIR / "claude-usage-monitor.desktop"
 _MONITOR_DIR = Path(__file__).parent.resolve()
 
-
-def _acquire_single_instance_lock():
-    global _LOCK_FH
-    lock_path = f"/tmp/{APP_ID}.{os.getuid()}.lock"
-    try:
-        _LOCK_FH = open(lock_path, "w")
-        fcntl.flock(_LOCK_FH.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        return False
-    return True
 
 
 def _seg_color(pct):
@@ -231,7 +220,7 @@ class UsageWidget:
         menu.append(Gtk.SeparatorMenuItem())
 
         item_quit = Gtk.MenuItem(label="Quit")
-        item_quit.connect("activate", lambda _: Gtk.main_quit())
+        item_quit.connect("activate", self._on_quit)
         menu.append(item_quit)
 
         menu.show_all()
@@ -292,6 +281,12 @@ class UsageWidget:
         save_settings(self._settings)
         if hasattr(self, "_interval_change_cb") and self._interval_change_cb:
             self._interval_change_cb(minutes)
+
+    def _on_quit(self, _item) -> None:
+        """Hard exit — GTK.main_quit alone doesn't always kill the process."""
+        import os
+        Gtk.main_quit()
+        os._exit(0)
 
     def _on_autostart_toggled(self, item) -> None:
         if item.get_active():

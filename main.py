@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Claude Usage Monitor for Linux — system tray indicator for Claude API rate limits."""
 
+import fcntl
 import os
 import signal
 import sys
@@ -14,6 +15,29 @@ sys.path.insert(0, str(Path(__file__).parent))
 if not os.environ.get("WAYLAND_DISPLAY"):
     os.environ["WAYLAND_DISPLAY"] = "wayland-0"
 
+
+# ---- Single instance lock (BEFORE any GTK imports) ----
+_LOCK_FH = None
+_LOCK_PATH = f"/tmp/claude-usage-monitor.{os.getuid()}.lock"
+
+
+def _acquire_lock():
+    global _LOCK_FH
+    try:
+        _LOCK_FH = open(_LOCK_PATH, "w")
+        fcntl.flock(_LOCK_FH.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _LOCK_FH.write(str(os.getpid()))
+        _LOCK_FH.flush()
+        return True
+    except OSError:
+        return False
+
+
+if not _acquire_lock():
+    print("Claude Usage Monitor is already running. Exiting.", file=sys.stderr)
+    sys.exit(0)
+
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -24,6 +48,11 @@ from config import load_settings
 from ui import UsageWidget
 
 _DEMO = "--demo" in sys.argv
+
+
+def _force_exit():
+    """Nuclear exit — ensures the process actually dies."""
+    os._exit(0)
 
 
 class App:
@@ -83,6 +112,8 @@ class App:
             self._poller.stop()
         if self._countdown_source_id:
             GLib.source_remove(self._countdown_source_id)
+        # Schedule hard exit after GTK cleanup
+        GLib.timeout_add(200, _force_exit)
         Gtk.main_quit()
         return False
 
