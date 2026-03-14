@@ -69,33 +69,41 @@ chmod +x "$SCRIPT_DIR/main.py"
 echo ""
 read -rp "Enable autostart on login? [Y/n] " answer
 answer="${answer:-Y}"
-if [[ "$answer" =~ ^[Yy]$ ]]; then
-    mkdir -p "$AUTOSTART_DIR"
-    cat > "$DESKTOP_FILE" <<EOF
-[Desktop Entry]
+DESKTOP_CONTENT="[Desktop Entry]
 Type=Application
-Name=Claude Usage Monitor for Linux
+Name=Claude Usage Monitor
 Comment=System tray monitor for Claude API rate limits
 Exec=python3 $SCRIPT_DIR/main.py
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
-Icon=claude-usage-monitor
-EOF
-    echo "  [OK] Autostart entry created: $DESKTOP_FILE"
+Terminal=false
+Categories=Utility;Monitor;"
+
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+    mkdir -p "$AUTOSTART_DIR"
+    echo "$DESKTOP_CONTENT" > "$DESKTOP_FILE"
+    echo "  [OK] Autostart enabled"
 else
     echo "  [-] Skipping autostart"
 fi
+
+# ----- App menu entry -----
+mkdir -p "$HOME/.local/share/applications"
+echo "$DESKTOP_CONTENT" > "$HOME/.local/share/applications/claude-usage-monitor.desktop"
+echo "  [OK] Added to application menu"
 
 # ----- Launch -----
 echo ""
 read -rp "Launch now? [Y/n] " launch
 launch="${launch:-Y}"
 if [[ "$launch" =~ ^[Yy]$ ]]; then
-    python3 "$SCRIPT_DIR/main.py" &
-    echo "  [OK] Launched (PID $!)"
+    nohup python3 "$SCRIPT_DIR/main.py" >/dev/null 2>&1 &
+    disown
+    echo "  [OK] Running in background"
 fi
 
 echo ""
-echo "Done! Manual start:  python3 $SCRIPT_DIR/main.py"
-echo "Stop:                Click tray icon > Quit"
+echo "Done!"
+echo "  Start: click 'Claude Usage Monitor' in app menu"
+echo "  Stop:  click tray icon > Quit"
